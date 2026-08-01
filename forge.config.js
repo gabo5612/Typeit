@@ -1,6 +1,15 @@
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 
+// El instalador Squirrel lo arma electron-winstaller, que fuera de Windows
+// exige Mono + Wine. Sin ese filtro, correr `make --platform=win32` desde macOS
+// revienta con "You must install both Mono and Wine on non-Windows" y se lleva
+// puesto tambien al maker de ZIP, que si funciona cross-platform.
+//
+// O sea: desde macOS se obtiene el .zip portable de Windows; el Setup.exe sale
+// de una PC con Windows o del workflow de CI (.github/workflows).
+const enWindows = process.platform === 'win32';
+
 module.exports = {
   packagerConfig: {
     asar: true,
@@ -21,11 +30,11 @@ module.exports = {
   makers: [
     { name: '@electron-forge/maker-zip', platforms: ['darwin'] },
     { name: '@electron-forge/maker-dmg', config: {}, platforms: ['darwin'] },
-    {
+    ...(enWindows ? [{
       name: '@electron-forge/maker-squirrel',
       platforms: ['win32'],
       config: { name: 'Typeit', setupExe: 'Typeit-Setup.exe' },
-    },
+    }] : []),
     { name: '@electron-forge/maker-zip', platforms: ['win32'] },
   ],
   plugins: [
